@@ -12,7 +12,11 @@ images = []
 for i in tqdm(range(len(dataset["train"])), total=len(dataset["train"])):
     image = np.array(dataset["train"][i]["image"])
     images.append(image)
-images = torch.tensor(images)
-torch.save(images, "data/images.pt")
+
+# print the labels
+labels = []
+for i in tqdm(range(len(dataset["train"])), total=len(dataset["train"])):
+    label = dataset["train"][i]["label"]
+    labels.append(label)
 
 # create a dataloader for the dataset
