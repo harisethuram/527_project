@@ -3,6 +3,9 @@ from torch.utils.data import DataLoader, Dataset
 import torch
 from torchvision import transforms
 
+def pil_to_rgb(img):
+    return img.convert("RGB")
+
 class ChexpertDataset(Dataset):
     def __init__(self, dataset=None, split="train", transform=None):
         if dataset is None:
@@ -14,7 +17,7 @@ class ChexpertDataset(Dataset):
         if self.transform is None:
             # Default transforms generally used for ViT, ResNet, and CLIP inputs
             self.transform = transforms.Compose([
-                transforms.Lambda(lambda img: img.convert("RGB")),
+                transforms.Lambda(pil_to_rgb),
                 transforms.Resize((224, 224)),
                 transforms.ToTensor(),
                 transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])

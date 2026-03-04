@@ -1,5 +1,7 @@
 datasets==4.5.0
+matplotlib==3.9.0
 numpy==2.4.2
+opencv-python==4.8.1.78
 Pillow==12.1.1
 scikit_learn==1.8.0
 timm==1.0.24

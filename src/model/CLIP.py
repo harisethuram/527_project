@@ -1,22 +1,26 @@
-"""
-Get image embeddings from CLIP, and use those as features for a simple classifier.
-"""
 import torch
 import torch.nn as nn
-from transformers import CLIPVisionModel
+from transformers import CLIPModel
 
 class ChexpertCLIP(nn.Module):
     def __init__(self, num_classes=5):
-        super(ChexpertCLIP, self).__init__()
-        # Load a pretrained CLIP Vision model. 'openai/clip-vit-base-patch32' is a good default.
-        self.model = CLIPVisionModel.from_pretrained("openai/clip-vit-base-patch32")
-        
-        # Add a classification head on top of the pooled embedding
-        in_features = self.model.config.hidden_size
+        super().__init__()
+        self.clip = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+
+        # freeze CLIP
+        self.clip.eval()
+        for p in self.clip.parameters():
+            p.requires_grad = False
+
+        in_features = self.clip.config.projection_dim  # 512
         self.classifier = nn.Linear(in_features, num_classes)
-        
+
     def forward(self, x):
-        # x shape should be (batch_size, 3, 224, 224)
-        outputs = self.model(pixel_values=x)
-        pooled_output = outputs.pooler_output # shape (batch_size, hidden_size)
-        return self.classifier(pooled_output)
+        with torch.no_grad():
+            vision_out = self.clip.vision_model(pixel_values=x)   # BaseModelOutputWithPooling
+            pooled = vision_out.pooler_output                     # (B, 768)
+            feats = self.clip.visual_projection(pooled)           # (B, 512)  <- CLIP image embedding
+
+            feats = feats / feats.norm(dim=-1, keepdim=True).clamp(min=1e-6)
+
+        return self.classifier(feats)
