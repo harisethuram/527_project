@@ -15,7 +15,7 @@ from pathlib import Path
 from PIL import Image
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-import cv2
+# import cv2
 
 from src.model.CNN import ChexpertCNN
 from src.model.transformer import ChexpertTransformer
@@ -161,12 +161,12 @@ def main():
     parser.add_argument("--models", type=str, default="cnn,transformer", 
                         choices=["cnn", "transformer", "cnn,transformer"],
                         help="Models to generate saliency maps for (comma-separated)")
-    parser.add_argument("--model_dir", type=str, default="models/", 
+    parser.add_argument("--model_dir", type=str, default="models/init", 
                         help="Directory containing trained model weights")
     parser.add_argument("--image_path", type=str, default=None,
                         help="Path to a single JPEG image to process (if not set, uses dataset)")
-    parser.add_argument("--data_dir", type=str, default="data/validation", 
-                        help="Path to validation dataset (ignored if image_path is provided)")
+    parser.add_argument("--data_dir", type=str, default="data/test", 
+                        help="Path to test dataset (ignored if image_path is provided)")
     parser.add_argument("--output_dir", type=str, default="saliency_maps/", 
                         help="Directory to save saliency map visualizations")
     parser.add_argument("--num_samples", type=int, default=None, 
@@ -200,7 +200,7 @@ def main():
             continue
         
         # Load trained weights
-        weights_path = os.path.join(args.model_dir, f"{model_name}_chexpert.pth")
+        weights_path = os.path.join(args.model_dir, model_name,f"{model_name}_chexpert.pth")
         if not os.path.exists(weights_path):
             print(f"Warning: Model weights not found at {weights_path}")
             continue
