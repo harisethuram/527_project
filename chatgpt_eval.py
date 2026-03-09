@@ -258,8 +258,7 @@ def build_schema() -> Dict:
 
 def call_openai_on_raw_image(img: Image.Image) -> Dict:
     prompt = (
-        "You are given a chest X-ray image.\n"
-        "A colored overlay is given that may highlight regions of possible importance, but it may also be noisy.\n"
+        "You are analyzing a chest X-ray.\n"
         "For each of the following findings, decide whether it is present:\n"
         "- Atelectasis\n"
         "- Cardiomegaly\n"
