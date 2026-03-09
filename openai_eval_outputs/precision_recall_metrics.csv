@@ -1,0 +1,11 @@
+system,label,precision,recall,support_positive,predicted_positive,n_samples
+raw_image,Atelectasis,0.0,0.0,22,0,100
+raw_image,Cardiomegaly,0.3076923076923077,0.19047619047619047,21,13,100
+raw_image,Consolidation,0.0,0.0,3,2,100
+raw_image,Edema,0.0,0.0,6,0,100
+raw_image,Pleural Effusion,0.3333333333333333,0.047619047619047616,21,3,100
+saliency_map,Atelectasis,0.22,1.0,22,100,100
+saliency_map,Cardiomegaly,0.20634920634920634,0.6190476190476191,21,63,100
+saliency_map,Consolidation,0.03,1.0,3,100,100
+saliency_map,Edema,0.06060606060606061,1.0,6,99,100
+saliency_map,Pleural Effusion,0.21,1.0,21,100,100
