@@ -3,7 +3,7 @@ import io
 import json
 import time
 import base64
-from typing import Dict, Tuple, Any
+from typing import Dict, Tuple, Any, Optional
 from tqdm import tqdm
 
 import numpy as np
@@ -39,7 +39,7 @@ AILMENTS = [
 ]
 
 # For debugging, set e.g. MAX_SAMPLES = 5
-MAX_SAMPLES = 100
+MAX_SAMPLES = 5
 
 # Mild throttling / pacing
 SLEEP_SECONDS = 0.2
@@ -108,7 +108,7 @@ def load_ground_truth(csv_path: str) -> pd.DataFrame:
 # ARROW IMAGE DECODING
 # ============================================================
 
-def _maybe_numpy_from_buffer(value: Any) -> np.ndarray | None:
+def _maybe_numpy_from_buffer(value: Any) -> Optional[np.ndarray]:
     """
     Try decoding bytes-like buffers.
     Assumes uint8 image data with common layouts:
@@ -233,17 +233,18 @@ def build_schema() -> Dict:
         props[ailment] = {
             "type": "object",
             "properties": {
+                "evidence": {"type": "string"},
                 "present": {"type": "boolean"},
                 "confidence": {"type": "number"},
-                "evidence": {"type": "string"},
             },
-            "required": ["present", "confidence", "evidence"],
+            "required": ["evidence", "present", "confidence"],
             "additionalProperties": False,
         }
 
     return {
         "type": "object",
         "properties": {
+            "image_description": {"type": "string"},
             "findings": {
                 "type": "object",
                 "properties": props,
@@ -251,26 +252,28 @@ def build_schema() -> Dict:
                 "additionalProperties": False,
             }
         },
-        "required": ["findings"],
+        "required": ["image_description", "findings"],
         "additionalProperties": False,
     }
 
 
 def call_openai_on_raw_image(img: Image.Image) -> Dict:
     prompt = (
-        "You are analyzing a chest X-ray.\n"
-        "For each of the following findings, decide whether it is present:\n"
-        "- Atelectasis\n"
-        "- Cardiomegaly\n"
-        "- Consolidation\n"
-        "- Edema\n"
-        "- Pleural Effusion\n\n"
+        "You are an expert thoracic radiologist systematically analyzing a chest X-ray.\n"
+        "Examine the image carefully and determine if the following 5 findings are present. "
+        "Use these standard radiological visual criteria:\n"
+        "- Atelectasis: Look for volume loss, linear/wedge-shaped opacities, or anatomical displacement.\n"
+        "- Cardiomegaly: Check if the cardiac silhouette is enlarged (cardiothoracic ratio > 0.5).\n"
+        "- Consolidation: Look for dense airspace opacification, air bronchograms, or obscured anatomical margins.\n"
+        "- Edema: Check for hazy lung fields, prominent interstitial markings, or Kerley B lines.\n"
+        "- Pleural Effusion: Look for fluid meniscus or blunting of the costophrenic angles at the lung bases.\n\n"
         "Return JSON only.\n"
-        "For each finding, provide:\n"
+        "First, provide an `image_description` outlining the general visual appearance of the lungs, heart, and pleura.\n"
+        "Then, for each finding, provide:\n"
+        "- evidence: one concise sentence explaining your reasoning based on your image description.\n"
         "- present: true or false\n"
-        "- confidence: number from 0.0 to 1.0\n"
-        "- evidence: one short sentence\n\n"
-        "Be conservative. Do not infer unsupported findings."
+        "- confidence: your diagnostic confidence (number from 0.0 to 1.0)\n\n"
+        "Be conservative. Only report findings that are definitively supported by visual evidence."
     )
 
     img_b64 = pil_to_base64_png(img)
@@ -308,10 +311,15 @@ def call_openai_on_saliency_image(img: Image.Image, target_ailment: str) -> Dict
         "Task:\n"
         f"- Decide whether the image supports the finding {target_ailment}.\n"
         "- For the four non-target findings, always return:\n"
+        "  - evidence='Not evaluated because this saliency image targets a different finding.'\n"
         "  - present=false\n"
-        "  - confidence=0.0\n"
-        "  - evidence='Not evaluated because this saliency image targets a different finding.'\n\n"
-        "Return JSON only."
+        "  - confidence=0.0\n\n"
+        "Return JSON only.\n"
+        "First, provide an `image_description` describing what anatomical regions are highlighted in the saliency map.\n"
+        "Then, for each finding, provide:\n"
+        "- evidence: explain if the highlighted regions match the typical anatomy for the target finding.\n"
+        "- present: true or false\n"
+        "- confidence: number from 0.0 to 1.0"
     )
 
     img_b64 = pil_to_base64_png(img)
